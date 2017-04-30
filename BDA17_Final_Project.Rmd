@@ -1,0 +1,74 @@
+---
+title: "Yelp Challenge 2017"
+output:
+  html_document: default
+  html_notebook: default
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook for our final project for a data mining and predictive analytics class.
+
+Group: Anton P., Kyle N.
+
+# Setup
+```{r}
+#### Setup ####
+rm(list = ls(all.names = TRUE))
+library(jsonlite)
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+#### Load business data ####
+yelp_business <- stream_in(file("/Users/MacBookAir/Desktop/GoogleDrive/DATA/R/r-big-data/yelp_dataset_challenge_round9/yelp_academic_dataset_business.json"))
+```
+
+# Exploratory Data Analysis
+
+## Finding participating cities
+```{r}
+yelp_business$city <- as.factor(yelp_business$city)
+summary(yelp_business$city)
+```
+
+## Mapping North American data
+```{r}
+# Setup packages
+# devtools::install_github("dkahle/ggmap")
+library(ggplot2)
+library(ggmap)
+
+# Create a data frame with lat/lon points in lon/lat format (required)
+lon <- yelp_business$longitude
+lat <- yelp_business$latitude
+df <- as.data.frame(cbind(lon,lat))
+
+# Set up the scope of the map
+mapgilbert <- get_map(location = c(lon = mean(df$lon), lat = mean(df$lat)), zoom = 4,
+                      maptype = "roadmap", scale = 2)
+
+# Fix lables
+scale_x_longitude <- function(xmin=-180, xmax=180, step=1, ...) {
+  xbreaks <- seq(xmin,xmax,step)
+  xlabels <- unlist(lapply(xbreaks, function(x) ifelse(x < 0, parse(text=paste0(x,"^o", "*W")), ifelse(x > 0, parse(text=paste0(x,"^o", "*E")),x))))
+  return(scale_x_continuous("Longitude", breaks = xbreaks, labels = xlabels, expand = c(0, 0), ...))
+}
+scale_y_latitude <- function(ymin=-90, ymax=90, step=0.5, ...) {
+  ybreaks <- seq(ymin,ymax,step)
+  ylabels <- unlist(lapply(ybreaks, function(x) ifelse(x < 0, parse(text=paste0(x,"^o", "*S")), ifelse(x > 0, parse(text=paste0(x,"^o", "*N")),x))))
+  return(scale_y_continuous("Latitude", breaks = ybreaks, labels = ylabels, expand = c(0, 0), ...))
+}    
+
+# Plot the map and the points
+ggmap(mapgilbert) +
+  geom_point(data = df, aes(x = lon, y = lat, fill = "red", alpha = 0.8), size = 1,
+             shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).
+
+# Sources
+
+[Plot coordinates on map](http://stackoverflow.com/questions/23130604/plot-coordinates-on-map)
